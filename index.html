@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="classification" content="FEDERAL ENFORCEMENT — SOVEREIGN AUTHORITY">
+    <title>FEDERAL ENFORCEMENT COMMAND // MSOS-FEDERATION-ROOT</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600;800;900&display=swap');
+
+        :root {
+            --absolute-black: #000000;
+            --void: #050505;
+            --deep-grey: #0a0a0a;
+            --panel-grey: #111111;
+            --border-grey: #1f1f1f;
+            --grid-line: rgba(255, 255, 255, 0.04);
+            --grid-line-major: rgba(255, 255, 255, 0.08);
+            --text-primary: #e0e0e0;
+            --text-secondary: #888888;
+            --text-muted: #444444;
+            --text-faint: #2a2a2a;
+            --white: #ffffff;
+            --alert: #ffffff;
+            --warning: #aaaaaa;
+            --classified: #666666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            background: var(--absolute-black);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        body {
+            background: var(--absolute-black);
+            min-height: 100vh;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.5;
+            letter-spacing: 0.02em;
+        }
+
+        /* ==================================================
+           TACTICAL GRID BACKGROUND
+        ================================================== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid-line-major) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line-major) 1px, transparent 1px);
+            background-size: 200px 200px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ==================================================
+           SCANLINE OVERLAY
+        ================================================== */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 
