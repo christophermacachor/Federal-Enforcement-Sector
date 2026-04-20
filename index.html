@@ -48,9 +48,7 @@ html_content = '''<!DOCTYPE html>
             letter-spacing: 0.02em;
         }
 
-        /* ==================================================
-           TACTICAL GRID BACKGROUND
-        ================================================== */
+        /* TACTICAL GRID */
         body::before {
             content: '';
             position: fixed;
@@ -81,9 +79,7 @@ html_content = '''<!DOCTYPE html>
             pointer-events: none;
         }
 
-        /* ==================================================
-           SCANLINE OVERLAY
-        ================================================== */
+        /* SCANLINES */
         .scanlines {
             position: fixed;
             top: 0;
@@ -102,23 +98,19 @@ html_content = '''<!DOCTYPE html>
             opacity: 0.45;
         }
 
-        /* ==================================================
-           VIGNETTE
-        ================================================== */
+        /* VIGNETTE */
         .vignette {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at center, transparent 25%, rgba(0,0,0,0.9) 100%);
+            background: radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.92) 100%);
             pointer-events: none;
             z-index: 1;
         }
 
-        /* ==================================================
-           CANVAS
-        ================================================== */
+        /* CANVAS - ENSURE VISIBLE */
         #geometryCanvas {
             position: fixed;
             top: 0;
@@ -126,11 +118,10 @@ html_content = '''<!DOCTYPE html>
             width: 100%;
             height: 100%;
             z-index: 2;
+            display: block;
         }
 
-        /* ==================================================
-           UI LAYER
-        ================================================== */
+        /* UI LAYER */
         .ui-layer {
             position: fixed;
             top: 0;
@@ -145,9 +136,7 @@ html_content = '''<!DOCTYPE html>
             pointer-events: none;
         }
 
-        /* ==================================================
-           HEADER
-        ================================================== */
+        /* HEADER */
         .header {
             display: flex;
             justify-content: space-between;
@@ -196,9 +185,7 @@ html_content = '''<!DOCTYPE html>
             50% { opacity: 0.3; }
         }
 
-        /* ==================================================
-           CENTER DISPLAY
-        ================================================== */
+        /* CENTER */
         .center-display {
             position: absolute;
             top: 50%;
@@ -215,14 +202,12 @@ html_content = '''<!DOCTYPE html>
             font-weight: 900;
             color: var(--white);
             letter-spacing: 0.35em;
-            opacity: 0.035;
+            opacity: 0.04;
             text-transform: uppercase;
             user-select: none;
         }
 
-        /* ==================================================
-           FOOTER
-        ================================================== */
+        /* FOOTER */
         .footer {
             display: flex;
             justify-content: space-between;
@@ -262,9 +247,7 @@ html_content = '''<!DOCTYPE html>
             color: var(--white);
         }
 
-        /* ==================================================
-           SIDE BARS
-        ================================================== */
+        /* SIDE BARS */
         .side-bar {
             position: fixed;
             top: 50%;
@@ -283,9 +266,7 @@ html_content = '''<!DOCTYPE html>
         .side-bar.left { left: 0.6rem; }
         .side-bar.right { right: 0.6rem; transform: translateY(-50%) rotate(180deg); }
 
-        /* ==================================================
-           TICKER
-        ================================================== */
+        /* TICKER */
         .ticker {
             position: fixed;
             bottom: 5rem;
@@ -314,9 +295,7 @@ html_content = '''<!DOCTYPE html>
             100% { transform: translateX(-50%); }
         }
 
-        /* ==================================================
-           CORNER ACCENTS
-        ================================================== */
+        /* CORNERS */
         .corner {
             position: fixed;
             width: 40px;
@@ -399,9 +378,7 @@ html_content = '''<!DOCTYPE html>
     </div>
 
     <script>
-        // ==================================================
-        // SYSTEM CLOCK
-        // ==================================================
+        // Clock
         function updateTime() {
             const now = new Date();
             document.getElementById('sysTime').textContent = 
@@ -410,15 +387,17 @@ html_content = '''<!DOCTYPE html>
         setInterval(updateTime, 1000);
         updateTime();
 
-        // ==================================================
-        // 3D GEOMETRY ENGINE
-        // ==================================================
+        // Canvas setup - AGGRESSIVE MOBILE COMPAT
         const canvas = document.getElementById('geometryCanvas');
         const ctx = canvas.getContext('2d');
-        let width, height, cx, cy, minDim;
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        let cx = width / 2;
+        let cy = height / 2;
+        let minDim = Math.min(width, height);
         
         function resize() {
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap DPR at 2 for performance
             width = window.innerWidth;
             height = window.innerHeight;
             canvas.width = width * dpr;
@@ -430,19 +409,27 @@ html_content = '''<!DOCTYPE html>
             cy = height / 2;
             minDim = Math.min(width, height);
         }
-        window.addEventListener('resize', resize);
-        window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+        
         resize();
+        window.addEventListener('resize', resize);
+        window.addEventListener('orientationchange', () => setTimeout(resize, 300));
 
+        // 3D Math
         class P3 { constructor(x,y,z){ this.x=x; this.y=y; this.z=z; } }
         
         function proj(p) {
-            const fov = 700;
-            const dist = 4;
+            const fov = 600;
+            const dist = 3.5;
             const z = p.z + dist;
+            if (z <= 0) return { x: cx, y: cy, f: 0.1 };
             const f = fov / z;
-            const baseScale = minDim * 0.32;
-            return { x: cx + p.x * f * baseScale, y: cy + p.y * f * baseScale, f: f };
+            // MUCH larger scale for visibility
+            const baseScale = Math.max(minDim * 0.45, 120);
+            return { 
+                x: cx + p.x * f * baseScale * 0.01, 
+                y: cy + p.y * f * baseScale * 0.01, 
+                f: f 
+            };
         }
         
         function rotX(p, a) {
@@ -458,23 +445,31 @@ html_content = '''<!DOCTYPE html>
             return new P3(p.x*c-p.y*s, p.x*s+p.y*c, p.z);
         }
 
-        // Video-approved color cycle: green → red → blue → cyan
+        // HIGH VISIBILITY colors
         const C = {
-            g: {r:0,g:255,b:100,a:0.9},
-            r: {r:255,g:30,b:80,a:0.9},
-            b: {r:0,g:120,b:255,a:0.9},
-            c: {r:0,g:200,b:255,a:0.9},
-            p: {r:180,g:60,b:255,a:0.85},
-            w: {r:255,g:255,b:255,a:1}
+            g: {r:0,g:255,b:120,a:1.0},
+            r: {r:255,g:40,b:90,a:1.0},
+            b: {r:30,g:140,b:255,a:1.0},
+            c: {r:0,g:220,b:255,a:1.0},
+            p: {r:200,g:80,b:255,a:0.95},
+            w: {r:255,g:255,b:255,a:1.0}
         };
         
-        function cs(c, m=1) { return `rgba(${c.r},${c.g},${c.b},${c.a*m})`; }
+        function cs(c, m) { 
+            m = m || 1;
+            return `rgba(${c.r},${c.g},${c.b},${Math.min(c.a*m,1)})`; 
+        }
         function lerpC(a,b,t) {
-            return {r:a.r+(b.r-a.r)*t, g:a.g+(b.g-a.g)*t, b:a.b+(b.b-a.b)*t, a:a.a+(b.a-a.a)*t};
+            return {
+                r: Math.round(a.r+(b.r-a.r)*t), 
+                g: Math.round(a.g+(b.g-a.g)*t), 
+                b: Math.round(a.b+(b.b-a.b)*t), 
+                a: Math.min(a.a+(b.a-a.a)*t, 1)
+            };
         }
         
-        function phaseCol(ph, i=0) {
-            const cyc = (i%4)/3;
+        function phaseCol(ph, i) {
+            i = i || 0;
             if(ph<0.25) return lerpC(C.g, C.w, ph*3);
             if(ph<0.4) return lerpC(C.g, C.r, (ph-0.25)/0.15);
             if(ph<0.55) return lerpC(C.r, C.p, (ph-0.4)/0.15);
@@ -483,16 +478,18 @@ html_content = '''<!DOCTYPE html>
             return lerpC(C.c, C.w, (ph-0.85)/0.15);
         }
 
-        function cube(s=1) {
+        function cube(s) {
+            s = s || 1;
             return [
                 new P3(-s,-s,-s), new P3(s,-s,-s), new P3(s,s,-s), new P3(-s,s,-s),
                 new P3(-s,-s,s), new P3(s,-s,s), new P3(s,s,s), new P3(-s,s,s)
             ];
         }
-        function octa(s=1) {
+        function octa(s) {
+            s = s || 1;
             return [
-                new P3(0,s*1.3,0), new P3(s,0,0), new P3(0,0,s),
-                new P3(-s,0,0), new P3(0,0,-s), new P3(0,-s*1.3,0)
+                new P3(0,s*1.4,0), new P3(s,0,0), new P3(0,0,s),
+                new P3(-s,0,0), new P3(0,0,-s), new P3(0,-s*1.4,0)
             ];
         }
         
@@ -500,20 +497,20 @@ html_content = '''<!DOCTYPE html>
         const oEdges = [[0,1],[0,2],[0,3],[0,4],[5,1],[5,2],[5,3],[5,4],[1,2],[2,3],[3,4],[4,1]];
         
         function morphPts(ph) {
-            const c = cube(1.1);
+            const c = cube(1.2);
             const result = [];
-            const topY = 1.3 * Math.sin(ph * Math.PI/2);
-            const botY = -1.3 * Math.sin(ph * Math.PI/2);
-            const exp = 0.8 + 0.5 * Math.sin(ph * Math.PI);
+            const topY = 1.4 * Math.sin(ph * Math.PI/2);
+            const botY = -1.4 * Math.sin(ph * Math.PI/2);
+            const exp = 0.9 + 0.4 * Math.sin(ph * Math.PI);
             
             for(let i=0;i<8;i++) {
                 const cv = c[i];
                 let tx, ty, tz;
                 if(ph < 0.5) {
                     const t = ph*2;
-                    const sq = 1 - t*0.3;
+                    const sq = 1 - t*0.25;
                     tx = cv.x * sq;
-                    ty = cv.y * (1-t*0.4) + (cv.y>0 ? topY : botY) * t * 0.5;
+                    ty = cv.y * (1-t*0.35) + (cv.y>0 ? topY : botY) * t * 0.5;
                     tz = cv.z * sq;
                 } else {
                     const t = (ph-0.5)*2;
@@ -532,90 +529,107 @@ html_content = '''<!DOCTYPE html>
             return result;
         }
 
+        // Input
         let time = 0;
         let arX = 0, arY = 0, arZ = 0;
         let trX = 0, trY = 0;
         let touchActive = false;
         let lastTouchX = 0, lastTouchY = 0;
 
-        document.addEventListener('mousemove', e => {
+        document.addEventListener('mousemove', function(e) {
             if(!touchActive) {
-                trY = (e.clientX/width - 0.5) * 1.2;
-                trX = (e.clientY/height - 0.5) * 1.2;
+                trY = (e.clientX/width - 0.5) * 1.5;
+                trX = (e.clientY/height - 0.5) * 1.5;
             }
         });
         
-        document.addEventListener('touchstart', e => {
+        document.addEventListener('touchstart', function(e) {
             touchActive = true;
             lastTouchX = e.touches[0].clientX;
             lastTouchY = e.touches[0].clientY;
         }, {passive:false});
         
-        document.addEventListener('touchmove', e => {
+        document.addEventListener('touchmove', function(e) {
             e.preventDefault();
-            const tx = e.touches[0].clientX;
-            const ty = e.touches[0].clientY;
-            trY += (tx - lastTouchX) * 0.008;
-            trX += (ty - lastTouchY) * 0.008;
+            var tx = e.touches[0].clientX;
+            var ty = e.touches[0].clientY;
+            trY += (tx - lastTouchX) * 0.01;
+            trX += (ty - lastTouchY) * 0.01;
             lastTouchX = tx;
             lastTouchY = ty;
         }, {passive:false});
         
-        document.addEventListener('touchend', () => { touchActive = false; });
+        document.addEventListener('touchend', function() { touchActive = false; });
 
-        const pts = [];
-        for(let i=0;i<70;i++) {
-            pts.push({
-                x:(Math.random()-0.5)*20, y:(Math.random()-0.5)*20, z:(Math.random()-0.5)*20,
-                vx:(Math.random()-0.5)*0.012, vy:(Math.random()-0.5)*0.012, vz:(Math.random()-0.5)*0.012,
-                life:Math.random(), maxLife:1+Math.random()*2
+        // Particles
+        var particles = [];
+        for(var i=0;i<60;i++) {
+            particles.push({
+                x:(Math.random()-0.5)*18, 
+                y:(Math.random()-0.5)*18, 
+                z:(Math.random()-0.5)*18,
+                vx:(Math.random()-0.5)*0.015, 
+                vy:(Math.random()-0.5)*0.015, 
+                vz:(Math.random()-0.5)*0.015,
+                life:Math.random(), 
+                maxLife:1+Math.random()*2
             });
         }
 
-        const rings = [
-            {r:2.6, sp:0.35, tx:0.4, tz:0.3, n:60, col:C.g},
-            {r:3.3, sp:-0.22, tx:0.9, tz:0.6, n:76, col:C.b},
-            {r:4.1, sp:0.16, tx:1.3, tz:0.9, n:96, col:C.c}
+        // Rings
+        var rings = [
+            {r:2.4, sp:0.4, tx:0.4, tz:0.3, n:56, col:C.g},
+            {r:3.1, sp:-0.25, tx:0.9, tz:0.6, n:72, col:C.b},
+            {r:3.8, sp:0.18, tx:1.3, tz:0.9, n:90, col:C.c}
         ];
 
         function drawRing(ring, rx, ry, t, ph) {
-            const col = lerpC(ring.col, ph>0.5?C.c:C.g, Math.sin(t)*0.25+0.25);
-            const pts2 = [];
-            for(let i=0;i<ring.n;i++) {
-                const a = (i/ring.n)*Math.PI*2 + t*ring.sp;
-                let p = new P3(Math.cos(a)*ring.r, Math.sin(a)*ring.r, 0);
+            var col = lerpC(ring.col, ph>0.5?C.c:C.g, Math.sin(t)*0.3+0.3);
+            var pts2 = [];
+            for(var i=0;i<ring.n;i++) {
+                var a = (i/ring.n)*Math.PI*2 + t*ring.sp;
+                var p = new P3(Math.cos(a)*ring.r, Math.sin(a)*ring.r, 0);
                 p = rotX(p, ring.tx);
                 p = rotZ(p, ring.tz);
                 p = rotY(p, ry*0.4);
                 p = rotX(p, rx*0.3);
                 pts2.push(p);
             }
-            for(let i=0;i<pts2.length;i++) {
-                const j = (i+1)%pts2.length;
-                const a = 0.18 + Math.sin(t*2+i*0.15)*0.06;
-                const p1 = proj(pts2[i]);
-                const p2 = proj(pts2[j]);
+            for(var i=0;i<pts2.length;i++) {
+                var j = (i+1)%pts2.length;
+                var a = 0.22 + Math.sin(t*2+i*0.15)*0.08;
+                var p1 = proj(pts2[i]);
+                var p2 = proj(pts2[j]);
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
                 ctx.lineTo(p2.x, p2.y);
                 ctx.strokeStyle = cs(col, a);
-                ctx.lineWidth = 1.2;
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
             }
         }
 
         function gLine(p1, p2, col, a, w) {
-            const pr1 = proj(p1), pr2 = proj(p2);
-            const af = (pr1.f + pr2.f)/2;
-            const lw = w * af * 0.45;
+            var pr1 = proj(p1), pr2 = proj(p2);
+            var af = (pr1.f + pr2.f)/2;
+            var lw = w * af * 0.5;
+            
+            // Strong glow
+            ctx.beginPath();
+            ctx.moveTo(pr1.x, pr1.y);
+            ctx.lineTo(pr2.x, pr2.y);
+            ctx.strokeStyle = cs(col, a*0.2);
+            ctx.lineWidth = lw*8;
+            ctx.stroke();
             
             ctx.beginPath();
             ctx.moveTo(pr1.x, pr1.y);
             ctx.lineTo(pr2.x, pr2.y);
-            ctx.strokeStyle = cs(col, a*0.12);
-            ctx.lineWidth = lw*5;
+            ctx.strokeStyle = cs(col, a*0.5);
+            ctx.lineWidth = lw*3;
             ctx.stroke();
             
+            // Core
             ctx.beginPath();
             ctx.moveTo(pr1.x, pr1.y);
             ctx.lineTo(pr2.x, pr2.y);
@@ -625,17 +639,17 @@ html_content = '''<!DOCTYPE html>
         }
 
         function gPoint(p, col, sz, a) {
-            const pr = proj(p);
-            const s = sz * pr.f * 0.35;
+            var pr = proj(p);
+            var s = sz * pr.f * 0.4;
             
             ctx.beginPath();
-            ctx.arc(pr.x, pr.y, s*4, 0, Math.PI*2);
-            ctx.fillStyle = cs(col, a*0.06);
+            ctx.arc(pr.x, pr.y, s*5, 0, Math.PI*2);
+            ctx.fillStyle = cs(col, a*0.08);
             ctx.fill();
             
             ctx.beginPath();
-            ctx.arc(pr.x, pr.y, s*1.8, 0, Math.PI*2);
-            ctx.fillStyle = cs(col, a*0.15);
+            ctx.arc(pr.x, pr.y, s*2.2, 0, Math.PI*2);
+            ctx.fillStyle = cs(col, a*0.2);
             ctx.fill();
             
             ctx.beginPath();
@@ -646,95 +660,111 @@ html_content = '''<!DOCTYPE html>
 
         function drawFace(pts, idx, col, a) {
             if(idx.length<3) return;
-            const ps = idx.map(i => proj(pts[i]));
+            var ps = [];
+            for(var k=0;k<idx.length;k++) ps.push(proj(pts[idx[k]]));
             ctx.beginPath();
             ctx.moveTo(ps[0].x, ps[0].y);
-            for(let i=1;i<ps.length;i++) ctx.lineTo(ps[i].x, ps[i].y);
+            for(var k=1;k<ps.length;k++) ctx.lineTo(ps[k].x, ps[k].y);
             ctx.closePath();
-            ctx.fillStyle = cs(col, a*0.03);
+            ctx.fillStyle = cs(col, a*0.04);
             ctx.fill();
-            ctx.strokeStyle = cs(col, a*0.1);
-            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = cs(col, a*0.12);
+            ctx.lineWidth = 0.8;
             ctx.stroke();
         }
 
         function animate() {
-            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            // Clear with heavy trail
+            ctx.fillStyle = 'rgba(0,0,0,0.12)';
             ctx.fillRect(0, 0, width, height);
             
-            time += 0.016;
+            time += 0.018;
             
-            arY += 0.004;
-            arX += (trX - arX) * 0.04;
-            arY += (trY - arY) * 0.04;
-            arZ += 0.001;
+            arY += 0.005;
+            arX += (trX - arX) * 0.05;
+            arY += (trY - arY) * 0.05;
+            arZ += 0.0015;
             
-            const ph = (Math.sin(time*0.25)+1)/2;
-            const shape = morphPts(ph);
+            var ph = (Math.sin(time*0.28)+1)/2;
+            var shape = morphPts(ph);
             
-            const rot = shape.map(p => {
-                let r = rotX(p, arX);
+            var rot = [];
+            for(var i=0;i<shape.length;i++) {
+                var r = rotX(shape[i], arX);
                 r = rotY(r, arY);
                 r = rotZ(r, arZ);
-                return r;
-            });
-            
-            rings.forEach(r => drawRing(r, arX, arY, time, ph));
-            
-            if(ph<0.35) {
-                const faces = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[0,3,7,4],[1,2,6,5]];
-                faces.forEach((f,i) => drawFace(rot, f, phaseCol(ph,i), 0.55));
-            } else if(ph>0.65) {
-                const faces = [[0,1,2],[0,2,3],[0,3,4],[0,4,1],[5,1,2],[5,2,3],[5,3,4],[5,4,1]];
-                faces.forEach((f,i) => drawFace(rot, f, phaseCol(ph,i), 0.55));
+                rot.push(r);
             }
             
-            const edges = ph<0.5 ? cEdges : oEdges;
-            edges.forEach((e,i) => {
-                if(rot[e[0]] && rot[e[1]]) {
-                    const col = phaseCol(ph, i);
-                    const pulse = Math.sin(time*3+i*0.5)*0.2+0.8;
-                    gLine(rot[e[0]], rot[e[1]], col, 0.5*pulse, 2.2);
+            // Rings
+            for(var i=0;i<rings.length;i++) {
+                drawRing(rings[i], arX, arY, time, ph);
+            }
+            
+            // Faces
+            if(ph<0.35) {
+                var faces = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[0,3,7,4],[1,2,6,5]];
+                for(var i=0;i<faces.length;i++) drawFace(rot, faces[i], phaseCol(ph,i), 0.6);
+            } else if(ph>0.65) {
+                var faces = [[0,1,2],[0,2,3],[0,3,4],[0,4,1],[5,1,2],[5,2,3],[5,3,4],[5,4,1]];
+                for(var i=0;i<faces.length;i++) drawFace(rot, faces[i], phaseCol(ph,i), 0.6);
+            }
+            
+            // Edges
+            var edges = ph<0.5 ? cEdges : oEdges;
+            for(var i=0;i<edges.length;i++) {
+                if(rot[edges[i][0]] && rot[edges[i][1]]) {
+                    var col = phaseCol(ph, i);
+                    var pulse = Math.sin(time*3+i*0.5)*0.2+0.8;
+                    gLine(rot[edges[i][0]], rot[edges[i][1]], col, 0.6*pulse, 2.5);
                 }
-            });
+            }
             
-            rot.forEach((p,i) => {
-                const col = phaseCol(ph, i);
-                const pulse = Math.sin(time*4+i*0.8)*0.25+0.75;
-                gPoint(p, col, 3*pulse, 0.9);
-            });
+            // Vertices
+            for(var i=0;i<rot.length;i++) {
+                var col = phaseCol(ph, i);
+                var pulse = Math.sin(time*4+i*0.8)*0.25+0.75;
+                gPoint(rot[i], col, 3.5*pulse, 0.95);
+            }
             
-            const cp = Math.sin(time*3)*0.25+0.75;
-            const cc = phaseCol(ph, 0);
-            gPoint(new P3(0,0,0), cc, 10*cp, 0.22);
-            gPoint(new P3(0,0,0), C.w, 4*cp, 0.55);
+            // Core
+            var cp = Math.sin(time*3)*0.3+0.7;
+            var cc = phaseCol(ph, 0);
+            gPoint(new P3(0,0,0), cc, 12*cp, 0.3);
+            gPoint(new P3(0,0,0), C.w, 5*cp, 0.7);
             
-            pts.forEach(p => {
+            // Particles
+            for(var i=0;i<particles.length;i++) {
+                var p = particles[i];
                 p.x += p.vx; p.y += p.vy; p.z += p.vz;
-                p.life += 0.012;
+                p.life += 0.014;
                 if(p.life > p.maxLife) {
-                    p.x=(Math.random()-0.5)*18; p.y=(Math.random()-0.5)*18; p.z=(Math.random()-0.5)*18;
+                    p.x=(Math.random()-0.5)*16; 
+                    p.y=(Math.random()-0.5)*16; 
+                    p.z=(Math.random()-0.5)*16;
                     p.life=0;
                 }
-                let pp = rotX(new P3(p.x,p.y,p.z), arX);
+                var pp = rotX(new P3(p.x,p.y,p.z), arX);
                 pp = rotY(pp, arY);
-                const a = (1-p.life/p.maxLife)*0.5;
-                const pr = proj(pp);
-                const sz = (1-p.life/p.maxLife)*1.8;
-                const pc = phaseCol(ph, Math.floor(p.x*8));
+                var a = (1-p.life/p.maxLife)*0.6;
+                var pr = proj(pp);
+                var sz = (1-p.life/p.maxLife)*2.2;
+                var pc = phaseCol(ph, Math.floor(p.x*8));
                 ctx.beginPath();
                 ctx.arc(pr.x, pr.y, sz, 0, Math.PI*2);
                 ctx.fillStyle = cs(pc, a);
                 ctx.fill();
-            });
+            }
             
-            const coh = 0.618 + Math.sin(time*0.4)*0.04;
+            // UI update
+            var coh = 0.618 + Math.sin(time*0.4)*0.04;
             document.getElementById('coherence').textContent = coh.toFixed(3);
             
             requestAnimationFrame(animate);
         }
         
-        setTimeout(animate, 100);
+        // Start immediately
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>'''
@@ -742,5 +772,5 @@ html_content = '''<!DOCTYPE html>
 with open('/mnt/agents/output/federal_enforcement_sector_669.html', 'w') as f:
     f.write(html_content)
 
-print("Complete file saved.")
+print("High-visibility rebuild saved.")
 print(f"Size: {len(html_content)} chars")
